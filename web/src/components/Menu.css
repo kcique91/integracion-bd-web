@@ -1,0 +1,140 @@
+
+/* Estilos del menú migrados desde css/estilos.css del proyecto original */
+
+.menu {
+  padding: var(--espacio-md);
+  border-bottom: 1px solid var(--color-primario);
+  background-color: var(--color-fondo);
+}
+
+.menu-logo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.menu-logo img {
+  height: 70px;
+  width: auto;
+  object-fit: contain;
+  border-radius: 4px;
+}
+
+.menu-logo span {
+  font-size: 1.3rem;
+  font-weight: bold;
+  color: var(--color-primario);
+}
+
+/* Botones del menú principal en cajitas */
+.menu-principal,
+.acciones-usuario {
+  gap: 10px;
+}
+
+.menu .nav-link {
+  padding: 8px 16px;
+  border-radius: 6px;
+  font-weight: 500;
+  white-space: nowrap;
+  transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+.menu-principal .nav-link {
+  border: 1px solid var(--color-primario);
+  color: var(--color-primario);
+}
+
+.menu-principal .nav-link:hover {
+  background-color: #eaf1fb;
+  color: var(--color-primario);
+}
+
+/* Página activa (NavLink agrega la clase "active") */
+.menu-principal .nav-link.active,
+.menu-principal .nav-link.active:hover {
+  background-color: var(--color-primario);
+  color: white;
+}
+
+/* Iniciar sesión: botón contorneado */
+.acciones-usuario .btn-login {
+  color: var(--color-primario);
+  border: 1px solid var(--color-primario);
+  background-color: white;
+}
+
+.acciones-usuario .btn-login:hover,
+.acciones-usuario .btn-login.active {
+  background-color: var(--color-primario);
+  color: white;
+}
+
+/* Registrar usuario: botón sólido */
+.acciones-usuario .btn-registro,
+.acciones-usuario .btn-registro.active {
+  background-color: var(--color-primario);
+  color: white;
+  border: 1px solid var(--color-primario);
+}
+
+.acciones-usuario .btn-registro:hover {
+  background-color: #1d4f85;
+  color: white;
+}
+
+/* Carrito */
+.acciones-usuario .btn-carrito,
+.acciones-usuario .btn-carrito.active {
+  color: var(--color-texto);
+  border: 1px solid var(--color-texto);
+}
+
+.acciones-usuario .btn-carrito:hover {
+  background-color: #eee;
+  color: var(--color-texto);
+}
+
+/* En pantallas pequeñas el menú colapsado apila los botones */
+@media (max-width: 991.98px) {
+  .menu-principal,
+  .acciones-usuario {
+    margin-top: 10px;
+  }
+}
+
+/* Usuario con sesión iniciada */
+
+/* Ir a Admin: botón contorneado azul */
+.acciones-usuario .btn-admin {
+  color: var(--color-primario);
+  border: 1px solid var(--color-primario);
+  background-color: white;
+}
+
+.acciones-usuario .btn-admin:hover,
+.acciones-usuario .btn-admin.active {
+  background-color: var(--color-primario);
+  color: white;
+}
+
+/* Nombre del usuario: cajita celeste, no es un botón */
+.acciones-usuario .saludo-usuario {
+  color: var(--color-primario);
+  background-color: #eaf1fb;
+  border: 1px solid var(--color-primario);
+  cursor: default;
+}
+
+/* Cerrar sesión: botón contorneado rojo */
+.acciones-usuario .btn-logout {
+  color: #b02a37;
+  border: 1px solid #b02a37;
+  background-color: white;
+  cursor: pointer;
+}
+
+.acciones-usuario .btn-logout:hover {
+  background-color: #b02a37;
+  color: white;
+}

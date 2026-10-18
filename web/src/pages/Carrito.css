@@ -1,0 +1,32 @@
+/* Tabla del carrito migrada desde css/estilos.css (#tablaCarrito) del proyecto original */
+
+.tabla-carrito th,
+.tabla-carrito td {
+  border: 1px solid var(--color-primario);
+  padding: var(--espacio-md);
+  text-align: center;
+  vertical-align: middle;
+}
+
+.imagen-carrito {
+  width: 80px;
+  height: 80px;
+  object-fit: contain;
+}
+
+/* Ícono de categoría (productos sin foto) en tamaño de tabla */
+.imagen-carrito.imagen-icono {
+  margin: 0 auto;
+  font-size: 2.5rem;
+}
+
+.tabla-carrito .cantidad {
+  display: inline-block;
+  min-width: 2.5em;
+}
+
+.total-carrito {
+  font-size: 1.3rem;
+  font-weight: bold;
+  color: var(--color-primario);
+}

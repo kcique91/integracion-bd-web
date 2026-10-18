@@ -1,0 +1,8 @@
+/* Estilos del footer migrados desde css/estilos.css del proyecto original */
+
+.pie-pagina {
+  text-align: center;
+  padding: var(--espacio-md);
+  background-color: var(--color-primario);
+  color: white;
+}

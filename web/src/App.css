@@ -1,0 +1,32 @@
+/* Variables globales migradas desde css/estilos.css del proyecto original */
+:root {
+  --color-primario: #2563a8;
+  --color-texto: #2c2c2c;
+  --color-fondo: #faf9f7;
+  --espacio-md: 16px;
+}
+
+body {
+  background-color: var(--color-fondo);
+  color: var(--color-texto);
+}
+
+/* Botones de Bootstrap con los colores del proyecto original
+   (btn-primario -> variant="primary", btn-secundario -> variant="outline-primary") */
+.btn-primary {
+  --bs-btn-bg: var(--color-primario);
+  --bs-btn-border-color: var(--color-primario);
+  --bs-btn-hover-bg: #1d4f85;
+  --bs-btn-hover-border-color: #1d4f85;
+  --bs-btn-active-bg: #1d4f85;
+  --bs-btn-active-border-color: #1d4f85;
+}
+
+.btn-outline-primary {
+  --bs-btn-color: var(--color-primario);
+  --bs-btn-border-color: var(--color-primario);
+  --bs-btn-hover-bg: var(--color-primario);
+  --bs-btn-hover-border-color: var(--color-primario);
+  --bs-btn-active-bg: var(--color-primario);
+  --bs-btn-active-border-color: var(--color-primario);
+}
