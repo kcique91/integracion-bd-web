@@ -69,6 +69,8 @@ UPDATE producto_v SET
     stock = 30, stock_critico = 6, imagen = 'cilindro-45kg.jpg'
 WHERE id_producto = 3;
 
+COMMIT;
+
 /* ============ PASO 2B: productos que solo existen en la web ============ */
 
 INSERT INTO producto_v (id_producto, codigo, categoria, nombre, descripcion, unidad,
@@ -132,6 +134,8 @@ VALUES (16, 'AC003', 'Accesorios', 'Detector de gas a batería',
         'Sensor electroquímico. Alarma sonora y visual ante fuga de gas GLP o metano',
         'Unidad', 19990, 17000, 8, 2, 'detector-gas.jpg');
 
+COMMIT;
+
 /* ============ PASO 2C: balon portatil y recarga pasan al catalogo ============ */
 
 UPDATE producto_v SET
@@ -147,6 +151,8 @@ UPDATE producto_v SET
     descripcion = 'Recarga de gas licuado para balón portátil de 2 kg',
     unidad = 'Unidad', precio_comercial = 4500, stock_critico = 12
 WHERE id_producto = 6;
+
+COMMIT;
 
 /* ============ PASO 2D: codigo de producto obligatorio ============ */
 
@@ -173,4 +179,83 @@ COMMIT;
 
 -- 4. Desde ahora el precio unitario es obligatorio
 ALTER TABLE detalle_pedido_v MODIFY (precio_unitario NOT NULL);
+
+/* ============ PASO 3: usuario_v (usuarios de la web) ============ */
+
+-- Limpieza: permite repetir el script (el 01 no conoce esta tabla)
+BEGIN
+   EXECUTE IMMEDIATE 'DROP TABLE usuario_v CASCADE CONSTRAINTS';
+EXCEPTION WHEN OTHERS THEN IF SQLCODE != -942 THEN RAISE; END IF;
+END;
+/
+
+CREATE TABLE usuario_v (
+    run              VARCHAR2(9)   PRIMARY KEY,
+    nombre           VARCHAR2(50)  NOT NULL,
+    apellidos        VARCHAR2(100) NOT NULL,
+    correo           VARCHAR2(100) NOT NULL,
+    password_hash    VARCHAR2(64)  NOT NULL,
+    tipo_usuario     VARCHAR2(15)  NOT NULL,
+    region           VARCHAR2(60)  NOT NULL,
+    comuna           VARCHAR2(60)  NOT NULL,
+    direccion        VARCHAR2(300) NOT NULL,
+    telefono         VARCHAR2(15),
+    fecha_nacimiento DATE,
+    CONSTRAINT uq_usuario_correo UNIQUE (correo),
+    CONSTRAINT ck_usuario_run CHECK (REGEXP_LIKE(run, '^[0-9]{7,8}[0-9K]$')),
+    CONSTRAINT ck_usuario_correo CHECK (REGEXP_LIKE(correo,
+        '^[^@ ]+@(duoc\.cl|profesor\.duoc\.cl|gmail\.com)$', 'i')),
+    CONSTRAINT ck_usuario_tipo CHECK (
+        tipo_usuario IN ('Administrador', 'Vendedor', 'Cliente'))
+);
+
+/* ============ PASO 3B: usuarios iniciales de la web ============ */
+-- Las contrasenas estan guardadas como hash bcrypt (admin / vende / 1234)
+
+INSERT INTO usuario_v (run, nombre, apellidos, correo, password_hash, tipo_usuario,
+                       region, comuna, direccion, telefono)
+VALUES ('111111111', 'Admin', 'Gas El Volcán', 'admin@duoc.cl',
+        '$2b$10$t.BwMMsxKhPNPIGafE34y.ok0m0dWPd89dASJZbjgEDidLvG.6uw6',
+        'Administrador', 'Región de Ñuble', 'Chillán',
+        'Bodega Central 100', '911111111');
+
+INSERT INTO usuario_v (run, nombre, apellidos, correo, password_hash, tipo_usuario,
+                       region, comuna, direccion, telefono)
+VALUES ('222222222', 'Carlos', 'Repartidor', 'vendedor@duoc.cl',
+        '$2b$10$QbA8XtgykY5p2XXwZEEF6ukBcGSa6LP5aHXkoiOPis2C5C.gcNTuu',
+        'Vendedor', 'Región de Ñuble', 'Chillán Viejo',
+        'Calle Los Puelches 45', '922222222');
+
+INSERT INTO usuario_v (run, nombre, apellidos, correo, password_hash, tipo_usuario,
+                       region, comuna, direccion, telefono)
+VALUES ('190110222', 'Juan', 'Perez', 'cliente@gmail.com',
+        '$2b$10$.8FNJSYfIbsVIIWFiFN35uVTU0Q/L6ev8vRhynb59aQnqU2nQHBnW',
+        'Cliente', 'Región de Ñuble', 'Chillán',
+        'Av Argentina 550', '933333333');
+
+COMMIT;
+
+        /* ============ PASO 4: enlazar cliente_v con usuario_v ============ */
+
+-- Un cliente puede tener cuenta en la web (run) o no tenerla (run vacio)
+ALTER TABLE cliente_v ADD (run VARCHAR2(9));
+
+ALTER TABLE cliente_v ADD CONSTRAINT fk_cliente_usuario
+    FOREIGN KEY (run) REFERENCES usuario_v (run);
+
+-- Un usuario de la web corresponde a un solo cliente
+ALTER TABLE cliente_v ADD CONSTRAINT uq_cliente_run UNIQUE (run);
+
+-- El usuario de prueba de la web (Juan) tambien pasa a ser cliente,
+-- con sus datos copiados desde usuario_v
+INSERT INTO cliente_v (id_cliente, nombre, direccion, telefono, email, run)
+SELECT 9, nombre || ' ' || apellidos, direccion || ', ' || comuna,
+       telefono, correo, run
+FROM usuario_v
+WHERE run = '190110222';
+
+COMMIT;
+
+
+
 
