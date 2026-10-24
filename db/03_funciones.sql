@@ -1,11 +1,12 @@
 -- =====================================================
 -- 03_funciones.sql
 -- Funciones almacenadas (con y sin parámetros)
--- Ejecutar DESPUES de 01 y 02, con la conexión HR
+-- Ejecutar DESPUES de 01 y 02, con la misma conexión
 -- =====================================================
 
 -- Función SIN parámetros:
 -- cuenta los productos cuyo stock está en el nivel crítico o por debajo
+-- Uso: SELECT fn_cantidad_stock_critico FROM dual;
 CREATE OR REPLACE FUNCTION fn_cantidad_stock_critico
 RETURN NUMBER
 IS
@@ -22,13 +23,16 @@ END fn_cantidad_stock_critico;
 
 -- Función CON parámetros:
 -- devuelve el precio de un producto según el tipo de cliente
+-- Regla de negocio central: el mismo producto tiene precio residencial o comercial.
+-- La usa pkg_ventas_v al agregar un producto a un pedido.
+-- Errores: -20010 producto inexistente, -20011 tipo de cliente no válido
 CREATE OR REPLACE FUNCTION fn_precio_producto (
-    p_id_producto  IN NUMBER,
-    p_tipo_cliente IN VARCHAR2
+    p_id_producto  IN producto_v.id_producto%TYPE,
+    p_tipo_cliente IN cliente_v.tipo_cliente%TYPE
 )
-RETURN NUMBER
+RETURN producto_v.precio_residencial%TYPE
 IS
-    v_precio NUMBER;
+    v_precio producto_v.precio_residencial%TYPE;
 BEGIN
     SELECT CASE UPPER(p_tipo_cliente)
                WHEN 'RESIDENCIAL' THEN precio_residencial
@@ -38,12 +42,14 @@ BEGIN
       FROM producto_v
      WHERE id_producto = p_id_producto;
 
+    -- el CASE devuelve NULL cuando el tipo no es RESIDENCIAL ni COMERCIAL
     IF v_precio IS NULL THEN
         RAISE_APPLICATION_ERROR(-20011, 'Tipo de cliente no valido: use RESIDENCIAL o COMERCIAL');
     END IF;
 
     RETURN v_precio;
 EXCEPTION
+    -- SELECT INTO sin filas: el producto no existe
     WHEN NO_DATA_FOUND THEN
         RAISE_APPLICATION_ERROR(-20010, 'El producto no existe');
 END fn_precio_producto;
@@ -52,8 +58,9 @@ END fn_precio_producto;
 -- Función CON parámetros:
 -- valida el dígito verificador de un RUN (módulo 11)
 -- devuelve 1 si es válido y 0 si no lo es
+-- La usa el trigger trg_validar_usuario_v (archivo 07)
 CREATE OR REPLACE FUNCTION fn_validar_run (
-    p_run IN VARCHAR2
+    p_run IN usuario_v.run%TYPE
 )
 RETURN NUMBER
 IS
@@ -84,6 +91,7 @@ BEGIN
         END IF;
     END LOOP;
 
+    -- dígito esperado: si el cálculo da 11 es 0, si da 10 es K, en otro caso el mismo número
     v_resto := 11 - MOD(v_suma, 11);
 
     v_dv_calculado := CASE v_resto

@@ -1,7 +1,7 @@
 -- =====================================================
 -- 06_triggers.sql
 -- Triggers a nivel de sentencia y a nivel de fila
--- Ejecutar DESPUES de 01 a 05, con la conexión HR
+-- Ejecutar DESPUES de 01 a 05, con la misma conexión
 -- =====================================================
 
 -- Limpieza para poder re-ejecutar el archivo
@@ -25,12 +25,14 @@ CREATE TABLE bitacora_producto_v (
 
 -- Trigger a nivel de SENTENCIA:
 -- se dispara una sola vez por cada INSERT, UPDATE o DELETE sobre producto_v,
--- sin importar cuántas filas afecte
+-- sin importar cuántas filas afecte (incluso si no afecta ninguna).
+-- Contraste: trg_historial_producto_v (archivo 10) es de FILA y registra producto por producto.
 CREATE OR REPLACE TRIGGER trg_bitacora_producto_v
 AFTER INSERT OR UPDATE OR DELETE ON producto_v
 DECLARE
-    v_operacion VARCHAR2(10);
+    v_operacion bitacora_producto_v.operacion%TYPE;
 BEGIN
+    -- INSERTING / UPDATING indican qué sentencia disparó el trigger
     IF INSERTING THEN
         v_operacion := 'INSERT';
     ELSIF UPDATING THEN
@@ -51,6 +53,8 @@ CREATE OR REPLACE TRIGGER trg_subtotal_detalle_v
 BEFORE INSERT OR UPDATE OF cantidad, precio_unitario ON detalle_pedido_v
 FOR EACH ROW
 BEGIN
+    -- NEW = la fila que se está por guardar. Si no trae precio, se toma el residencial
+    -- (pkg_ventas_v siempre lo envía, según el tipo de cliente)
     IF :NEW.precio_unitario IS NULL THEN
         SELECT precio_residencial
           INTO :NEW.precio_unitario
@@ -58,6 +62,7 @@ BEGIN
          WHERE id_producto = :NEW.id_producto;
     END IF;
 
+    -- el subtotal siempre lo calcula el trigger, nunca se digita
     :NEW.subtotal := :NEW.cantidad * :NEW.precio_unitario;
 EXCEPTION
     WHEN NO_DATA_FOUND THEN

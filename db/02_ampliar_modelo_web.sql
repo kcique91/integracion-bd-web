@@ -1,7 +1,9 @@
 -- =====================================================================
 -- 02_ampliar_modelo_web.sql
--- Ejecutar conectado como HR, DESPUES de 01_script_base_equipo.sql.
--- Para reconstruir todo desde cero: ejecutar 01, luego 02, 03... en orden.
+-- Que hace: adapta el modelo de EP1 a lo que necesita la tienda web
+--   (precio por tipo de cliente, codigo/categoria/imagen, usuarios).
+-- Ejecutar con la misma conexion de 01, DESPUES de 01_script_base_equipo.sql.
+-- Para reconstruir todo desde cero: ejecutar 01, luego 02, 03... hasta 10, en orden.
 -- =====================================================================
 
 /* ============ PASO 1: producto_v con los campos de la web ============ */
@@ -33,10 +35,14 @@ ALTER TABLE producto_v ADD CONSTRAINT ck_producto_unidad CHECK (
 ALTER TABLE producto_v ADD CONSTRAINT ck_producto_precios CHECK (
     precio_residencial >= 0 AND precio_comercial >= 0);
 
+-- Ultima barrera: el stock nunca puede quedar negativo
+-- (pkg_inventario_v lo valida antes y entrega un mensaje claro)
 ALTER TABLE producto_v ADD CONSTRAINT ck_producto_stock CHECK (
     stock >= 0 AND stock_critico >= 0);
-    /* ============ PASO 2A: productos que ya existen en la web ============ */
 
+/* ============ PASO 2A: productos que ya existen en la web ============ */
+
+-- Los productos de EP1 (ids 1 a 4) se igualan al catalogo de la web
 UPDATE producto_v SET
     codigo = 'CL001', categoria = 'Cilindros de Gas',
     nombre = 'Cilindro GLP 5 kg',
@@ -72,6 +78,7 @@ WHERE id_producto = 3;
 COMMIT;
 
 /* ============ PASO 2B: productos que solo existen en la web ============ */
+-- ids 7 a 16: reguladores, mangueras y accesorios del catalogo web
 
 INSERT INTO producto_v (id_producto, codigo, categoria, nombre, descripcion, unidad,
                         precio_residencial, precio_comercial, stock, stock_critico, imagen)
@@ -137,6 +144,7 @@ VALUES (16, 'AC003', 'Accesorios', 'Detector de gas a batería',
 COMMIT;
 
 /* ============ PASO 2C: balon portatil y recarga pasan al catalogo ============ */
+-- ids 5 y 6 ya existian en EP1; ahora son productos del catalogo con codigo y categoria
 
 UPDATE producto_v SET
     codigo = 'CL005', categoria = 'Cilindros de Gas',
@@ -155,12 +163,15 @@ WHERE id_producto = 6;
 COMMIT;
 
 /* ============ PASO 2D: codigo de producto obligatorio ============ */
+-- Ya todos los productos tienen codigo: desde ahora es obligatorio (minimo 3 caracteres)
 
 ALTER TABLE producto_v MODIFY (codigo NOT NULL);
 
 ALTER TABLE producto_v ADD CONSTRAINT ck_producto_codigo CHECK (LENGTH(codigo) >= 3);
 
 /* ============ PASO 2E: precio_unitario en detalle_pedido_v ============ */
+-- Cada linea de venta guarda el precio al que se vendio: si el catalogo cambia
+-- despues, las ventas ya hechas (y su total) no se alteran
 
 -- 1. Columna nueva para guardar el precio al que se vendio cada producto
 ALTER TABLE detalle_pedido_v ADD (precio_unitario NUMBER(10,2));
@@ -189,6 +200,8 @@ EXCEPTION WHEN OTHERS THEN IF SQLCODE != -942 THEN RAISE; END IF;
 END;
 /
 
+-- Cuentas de la web. Las reglas del formulario (RUN, correo, tipo) se repiten aqui;
+-- el digito verificador del RUN lo valida el trigger trg_validar_usuario_v (archivo 07)
 CREATE TABLE usuario_v (
     run              VARCHAR2(9)   PRIMARY KEY,
     nombre           VARCHAR2(50)  NOT NULL,
@@ -235,7 +248,7 @@ VALUES ('190110222', 'Juan', 'Perez', 'cliente@gmail.com',
 
 COMMIT;
 
-        /* ============ PASO 4: enlazar cliente_v con usuario_v ============ */
+/* ============ PASO 4: enlazar cliente_v con usuario_v ============ */
 
 -- Un cliente puede tener cuenta en la web (run) o no tenerla (run vacio)
 ALTER TABLE cliente_v ADD (run VARCHAR2(9));
@@ -245,6 +258,18 @@ ALTER TABLE cliente_v ADD CONSTRAINT fk_cliente_usuario
 
 -- Un usuario de la web corresponde a un solo cliente
 ALTER TABLE cliente_v ADD CONSTRAINT uq_cliente_run UNIQUE (run);
+
+-- Tipo de cliente: define qué lista de precios se le aplica
+-- (lo usa fn_precio_producto: RESIDENCIAL -> precio_residencial, COMERCIAL -> precio_comercial)
+ALTER TABLE cliente_v ADD (
+    tipo_cliente VARCHAR2(12) DEFAULT 'RESIDENCIAL' NOT NULL
+);
+
+ALTER TABLE cliente_v ADD CONSTRAINT ck_cliente_tipo CHECK (
+    tipo_cliente IN ('RESIDENCIAL', 'COMERCIAL'));
+
+-- La distribuidora del ejemplo de EP1 compra con precio comercial
+UPDATE cliente_v SET tipo_cliente = 'COMERCIAL' WHERE id_cliente = 7;
 
 -- El usuario de prueba de la web (Juan) tambien pasa a ser cliente,
 -- con sus datos copiados desde usuario_v
@@ -256,6 +281,5 @@ WHERE run = '190110222';
 
 COMMIT;
 
-
-
-
+-- Los cambios de tabla invalidan el package de EP1: se recompila
+ALTER PACKAGE pkg_gestion_pedidos_v COMPILE BODY;
